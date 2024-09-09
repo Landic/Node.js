@@ -1,0 +1,16 @@
+{
+  "name": "events-hw-volkov",
+  "version": "1.0.0",
+  "description": "homework 03.09.2024",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "author": "volkov",
+  "license": "ISC",
+  "dependencies": {
+    "events-hw-volkov": "^1.0.0"
+  }
+}
