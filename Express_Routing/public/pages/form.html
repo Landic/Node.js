@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #delete_button {
+            background-color: #f44336;
+        }
+        #delete_button:hover {
+            background-color: #da190b;
+        }
+        #view {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <form id="new_product">
+        <label for="name">Product Name</label>
+        <input type="text" name="name" id="name" required />
+        
+        <label for="price">Product Price</label>
+        <input type="number" name="price" id="price" required />
+        
+        <label for="id">Product ID</label>
+        <input type="number" name="id" id="id" placeholder="Product ID" />
+        
+        <button type="submit" id="add_button">Add Product</button>
+        <button type="button" id="update_button">Update Product</button>
+        <button type="button" id="delete_button">Delete Product</button>
+    </form>
+
+    <div id="view"></div>
+    <script src="/js/index.js"></script>
+</body>
+</html>
