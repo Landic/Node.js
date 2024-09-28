@@ -57,5 +57,4 @@ const fetchAndDisplayProducts = async () => {
     }
 };
 
-// Initial fetch of products
 fetchAndDisplayProducts();
