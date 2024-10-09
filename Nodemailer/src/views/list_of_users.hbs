@@ -1,0 +1,20 @@
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">ID</th>
+      <th scope="col">Login</th>
+      <th scope="col">Email</th>
+      <th scope="col">Photo</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each users}}
+      <tr>
+        <th scope="row">{{id}}</th>
+        <td>{{login}}</td>
+        <td>{{email}}</td>
+        <td><img class="photo" src="/{{image}}" alt={{login}} /></td>
+      </tr>
+    {{/each}}
+  </tbody>
+</table>
