@@ -1,0 +1,20 @@
+### Получение списка пользователей
+GET http://localhost:3000/api/users
+Content-Type: application/json
+
+### Создание нового пользователя
+POST http://localhost:3000/api/users
+Content-Type: application/json
+{
+  "name": "Test User",
+  "email": "testuser@example.com",
+  "password": "password123"
+}
+
+### Обновление пользователя
+PUT http://localhost:3000/api/users/1
+Content-Type: application/json
+{
+  "name": "Updated User",
+  "email": "updateduser@example.com"
+}
