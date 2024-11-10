@@ -8,7 +8,7 @@
     "start": "nodemon dist/index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "volkov",
   "license": "ISC",
   "description": "",
   "dependencies": {
