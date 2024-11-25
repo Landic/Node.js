@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import { MessageController } from '../controllers/message-controller';
 
+// Обертка для обработки асинхронных функций
+const asyncHandler = (fn: Function) => (req: any, res: any, next: any) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
+
 export const messageRouter = Router();
 
-messageRouter.post('/', MessageController.create);
-messageRouter.get('/', MessageController.getAll);
-messageRouter.get('/:id', MessageController.getById);
-messageRouter.put('/:id', MessageController.update);
-messageRouter.delete('/:id', MessageController.delete);
+messageRouter.post('/', asyncHandler(MessageController.create));
+messageRouter.get('/', asyncHandler(MessageController.getAll));
+messageRouter.get('/:id', asyncHandler(MessageController.getById));
+messageRouter.put('/:id', asyncHandler(MessageController.update));
+messageRouter.delete('/:id', asyncHandler(MessageController.delete));

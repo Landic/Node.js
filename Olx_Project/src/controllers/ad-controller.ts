@@ -6,25 +6,25 @@ export class AdvertisementController {
     private static readonly CACHE_KEY = 'ads:all';
     private static readonly CACHE_DURATION = 3600; // 1 hour in seconds
 
-    static async create(req: Request, res: Response): Promise<void> {
+    static async create(req: Request, res: Response): Promise<Response> {
         try {
             const advertisement = await Advertisement.create(req.body);
             await redisClient.del(this.CACHE_KEY);
 
-            res.status(201).json({
+            return res.status(201).json({
                 success: true,
-                data: advertisement
+                data: advertisement,
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: 'Error creating advertisement',
-                error
+                error,
             });
         }
     }
 
-    static async getAll(req: Request, res: Response): Promise<void> {
+    static async getAll(req: Request, res: Response): Promise<Response> {
         try {
             // Check cache first
             const cachedAds = await redisClient.get(this.CACHE_KEY);
@@ -32,7 +32,7 @@ export class AdvertisementController {
                 return res.status(200).json({
                     success: true,
                     data: JSON.parse(cachedAds),
-                    source: 'cache'
+                    source: 'cache',
                 });
             }
 
@@ -41,102 +41,99 @@ export class AdvertisementController {
             await redisClient.setEx(
                 this.CACHE_KEY,
                 this.CACHE_DURATION,
-                JSON.stringify(ads)
+                JSON.stringify(ads),
             );
 
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 data: ads,
-                source: 'database'
+                source: 'database',
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: 'Error retrieving advertisements',
-                error
+                error,
             });
         }
     }
 
-    static async getById(req: Request, res: Response): Promise<void> {
+    static async getById(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
             const advertisement = await Advertisement.findByPk(id);
 
             if (!advertisement) {
-                res.status(404).json({
+                return res.status(404).json({
                     success: false,
-                    message: 'Advertisement not found'
+                    message: 'Advertisement not found',
                 });
-                return;
             }
 
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
-                data: advertisement
+                data: advertisement,
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: 'Error retrieving advertisement',
-                error
+                error,
             });
         }
     }
 
-    static async update(req: Request, res: Response): Promise<void> {
+    static async update(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
             const [updatedCount] = await Advertisement.update(req.body, {
-                where: { id }
+                where: { id },
             });
 
             if (!updatedCount) {
-                res.status(404).json({
+                return res.status(404).json({
                     success: false,
-                    message: 'Advertisement not found'
+                    message: 'Advertisement not found',
                 });
-                return;
             }
 
             const updatedAd = await Advertisement.findByPk(id);
             await redisClient.del(this.CACHE_KEY);
 
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
-                data: updatedAd
+                data: updatedAd,
             });
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: 'Error updating advertisement',
-                error
+                error,
             });
         }
     }
 
-    static async delete(req: Request, res: Response): Promise<void> {
+    static async delete(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
             const deletedCount = await Advertisement.destroy({
-                where: { id }
+                where: { id },
             });
 
             if (!deletedCount) {
-                res.status(404).json({
+                return res.status(404).json({
                     success: false,
-                    message: 'Advertisement not found'
+                    message: 'Advertisement not found',
                 });
-                return;
             }
 
             await redisClient.del(this.CACHE_KEY);
-            res.status(204).send();
+            return res.status(204).send();
         } catch (error) {
-            res.status(500).json({
+            return res.status(500).json({
                 success: false,
                 message: 'Error deleting advertisement',
-                error
+                error,
             });
         }
     }
