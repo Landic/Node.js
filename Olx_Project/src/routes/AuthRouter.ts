@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { AuthController } from '../controllers/auth-controller';
-import { PasswordResetController } from '../controllers/Password-Reset-controller';
+import { AuthController } from '../controllers/AuthController';
+import { PasswordResetController } from '../controllers/PasswordResetController';
 
 // Обертка для асинхронных функций
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) =>

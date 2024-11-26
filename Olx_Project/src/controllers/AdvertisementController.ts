@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { Advertisement } from '../models/ad-model';
-import { redisClient } from '../config/redis';
+import { Advertisement } from '../models/AdvertisementModel';
+import { redisClient } from '../config/Redis';
 
 export class AdvertisementController {
     private static readonly CACHE_KEY = 'ads:all';

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { UserController } from '../controllers/user-controller';
+import { UserController } from '../controllers/UserController';
 
 // Обертка для обработки асинхронных функций
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) =>

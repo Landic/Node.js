@@ -1,5 +1,5 @@
 import { Model, Table, Column, DataType, ForeignKey } from 'sequelize-typescript';
-import { User } from './user-model';
+import { User } from './UserModel';
 
 @Table({ tableName: 'PasswordResets', timestamps: false })
 export class PasswordReset extends Model {

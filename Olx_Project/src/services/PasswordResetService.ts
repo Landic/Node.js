@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
-import { User } from '../models/user-model';
-import { PasswordResetToken } from '../models/passReset-token';
+import { User } from '../models/UserModel';
+import { PasswordResetToken } from '../models/PasswordResetToken';
 
 export class PasswordResetService {
     static async sendPasswordResetEmail(email: string) {

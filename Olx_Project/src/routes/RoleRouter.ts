@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { RoleController } from '../controllers/role-controller';
+import { RoleController } from '../controllers/RoleController';
 
 // Обертка для обработки асинхронных функций
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) =>

@@ -1,10 +1,10 @@
 import { Sequelize } from "sequelize-typescript";
-import { User } from "../models/user-model";
-import { Role } from "../models/role-model";
-import { Advertisement } from "../models/ad-model";
-import { Category } from "../models/category-model";
-import { Message } from "../models/message-model";
-import { PasswordReset } from "../models/Password-Reset-model";
+import { User } from "../models/UserModel";
+import { Role } from "../models/RoleModel";
+import { Advertisement } from "../models/AdvertisementModel";
+import { Category } from "../models/CategoryModel";
+import { Message } from "../models/MessageModel";
+import { PasswordReset } from "../models/PasswordResetModel";
 import "dotenv/config";
 
 export const connection = new Sequelize({

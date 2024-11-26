@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { User } from '../models/user-model';
-import { Role } from '../models/role-model';
-import { redisClient } from '../config/redis';
+import { User } from '../models/UserModel';
+import { Role } from '../models/RoleModel';
+import { redisClient } from '../config/Redis';
 
 export class UserController {
     private static readonly CACHE_KEY = 'user:all';

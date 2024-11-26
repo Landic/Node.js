@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { Message } from '../models/message-model';
-import { redisClient } from '../config/redis';
+import { Category } from '../models/CategoryModel';
+import { redisClient } from '../config/Redis';
 
-export class MessageController {
-    private static readonly CACHE_KEY = 'message:all';
+export class CategoryController {
+    private static readonly CACHE_KEY = 'category:all';
     private static readonly CACHE_DURATION = 3600; // 1 hour in seconds
 
     public static async create(
@@ -11,14 +11,14 @@ export class MessageController {
         res: Response
     ): Promise<Response> {
         try {
-            const message = await Message.create(req.body);
+            const category = await Category.create(req.body);
 
             await this.invalidateCache();
 
-            return res.status(201).json(message);
+            return res.status(201).json(category);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when creating a message',
+                message: 'Error when creating a category',
                 error
             });
         }
@@ -29,20 +29,20 @@ export class MessageController {
         res: Response
     ): Promise<Response> {
         try {
-            const cachedMessages = await this.getCachedMessages();
+            const cachedCategories = await this.getCachedCategories();
 
-            if (cachedMessages) {
-                return res.status(200).json(cachedMessages);
+            if (cachedCategories) {
+                return res.status(200).json(cachedCategories);
             }
 
-            const messages = await Message.findAll();
+            const categories = await Category.findAll();
 
-            await this.cacheMessages(messages);
+            await this.cacheCategories(categories);
 
-            return res.status(200).json(messages);
+            return res.status(200).json(categories);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when receiving messages',
+                message: 'Error when retrieving categories',
                 error
             });
         }
@@ -53,18 +53,18 @@ export class MessageController {
         res: Response
     ): Promise<Response> {
         try {
-            const message = await Message.findByPk(req.params.id);
+            const category = await Category.findByPk(req.params.id);
 
-            if (!message) {
+            if (!category) {
                 return res.status(404).json({
-                    message: 'Message not found'
+                    message: 'Category not found'
                 });
             }
 
-            return res.json(message);
+            return res.json(category);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when retrieving message',
+                message: 'Error when retrieving category',
                 error
             });
         }
@@ -75,24 +75,24 @@ export class MessageController {
         res: Response
     ): Promise<Response> {
         try {
-            const [updatedCount] = await Message.update(
+            const [updatedCount] = await Category.update(
                 req.body,
                 { where: { id: req.params.id } }
             );
 
             if (!updatedCount) {
                 return res.status(404).json({
-                    message: 'Message not found'
+                    message: 'Category not found'
                 });
             }
 
-            const updatedMessage = await Message.findByPk(req.params.id);
+            const updatedCategory = await Category.findByPk(req.params.id);
             await this.invalidateCache();
 
-            return res.json(updatedMessage);
+            return res.json(updatedCategory);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when updating message',
+                message: 'Error when updating category',
                 error
             });
         }
@@ -103,13 +103,13 @@ export class MessageController {
         res: Response
     ): Promise<Response> {
         try {
-            const deletedCount = await Message.destroy({
+            const deletedCount = await Category.destroy({
                 where: { id: req.params.id }
             });
 
             if (!deletedCount) {
                 return res.status(404).json({
-                    message: 'Message not found'
+                    message: 'Category not found'
                 });
             }
 
@@ -118,22 +118,22 @@ export class MessageController {
             return res.status(204).send();
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when deleting message',
+                message: 'Error when deleting category',
                 error
             });
         }
     }
 
-    private static async getCachedMessages(): Promise<any | null> {
+    private static async getCachedCategories(): Promise<any | null> {
         const cachedData = await redisClient.get(this.CACHE_KEY);
         return cachedData ? JSON.parse(cachedData) : null;
     }
 
-    private static async cacheMessages(messages: any[]): Promise<void> {
+    private static async cacheCategories(categories: any[]): Promise<void> {
         await redisClient.setEx(
             this.CACHE_KEY,
             this.CACHE_DURATION,
-            JSON.stringify(messages)
+            JSON.stringify(categories)
         );
     }
 

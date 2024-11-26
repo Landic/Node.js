@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { AdvertisementController } from '../controllers/ad-controller';
+import { AdvertisementController } from '../controllers/AdvertisementController';
 
 export const advertisementRouter = Router();
 

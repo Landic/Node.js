@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { MessageController } from '../controllers/message-controller';
+import { MessageController } from '../controllers/MessageController';
 
 // Обертка для обработки асинхронных функций
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) =>

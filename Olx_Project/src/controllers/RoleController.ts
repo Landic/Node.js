@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { Category } from '../models/category-model';
-import { redisClient } from '../config/redis';
+import { Role } from '../models/RoleModel';
+import { redisClient } from '../config/Redis';
 
-export class CategoryController {
-    private static readonly CACHE_KEY = 'category:all';
+export class RoleController {
+    private static readonly CACHE_KEY = 'role:all';
     private static readonly CACHE_DURATION = 3600; // 1 hour in seconds
 
     public static async create(
@@ -11,14 +11,14 @@ export class CategoryController {
         res: Response
     ): Promise<Response> {
         try {
-            const category = await Category.create(req.body);
+            const role = await Role.create(req.body);
 
             await this.invalidateCache();
 
-            return res.status(201).json(category);
+            return res.status(201).json(role);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when creating a category',
+                message: 'Error when creating a role',
                 error
             });
         }
@@ -29,20 +29,20 @@ export class CategoryController {
         res: Response
     ): Promise<Response> {
         try {
-            const cachedCategories = await this.getCachedCategories();
+            const cachedRoles = await this.getCachedRoles();
 
-            if (cachedCategories) {
-                return res.status(200).json(cachedCategories);
+            if (cachedRoles) {
+                return res.status(200).json(cachedRoles);
             }
 
-            const categories = await Category.findAll();
+            const roles = await Role.findAll();
 
-            await this.cacheCategories(categories);
+            await this.cacheRoles(roles);
 
-            return res.status(200).json(categories);
+            return res.status(200).json(roles);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when retrieving categories',
+                message: 'Error when obtaining roles',
                 error
             });
         }
@@ -53,18 +53,18 @@ export class CategoryController {
         res: Response
     ): Promise<Response> {
         try {
-            const category = await Category.findByPk(req.params.id);
+            const role = await Role.findByPk(req.params.id);
 
-            if (!category) {
+            if (!role) {
                 return res.status(404).json({
-                    message: 'Category not found'
+                    message: 'Role not found'
                 });
             }
 
-            return res.json(category);
+            return res.json(role);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when retrieving category',
+                message: 'Error when retrieving role',
                 error
             });
         }
@@ -75,24 +75,24 @@ export class CategoryController {
         res: Response
     ): Promise<Response> {
         try {
-            const [updatedCount] = await Category.update(
+            const [updatedCount] = await Role.update(
                 req.body,
                 { where: { id: req.params.id } }
             );
 
             if (!updatedCount) {
                 return res.status(404).json({
-                    message: 'Category not found'
+                    message: 'Role not found'
                 });
             }
 
-            const updatedCategory = await Category.findByPk(req.params.id);
+            const updatedRole = await Role.findByPk(req.params.id);
             await this.invalidateCache();
 
-            return res.json(updatedCategory);
+            return res.json(updatedRole);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when updating category',
+                message: 'Error when updating role',
                 error
             });
         }
@@ -103,13 +103,13 @@ export class CategoryController {
         res: Response
     ): Promise<Response> {
         try {
-            const deletedCount = await Category.destroy({
+            const deletedCount = await Role.destroy({
                 where: { id: req.params.id }
             });
 
             if (!deletedCount) {
                 return res.status(404).json({
-                    message: 'Category not found'
+                    message: 'Role not found'
                 });
             }
 
@@ -118,22 +118,22 @@ export class CategoryController {
             return res.status(204).send();
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when deleting category',
+                message: 'Error when deleting role',
                 error
             });
         }
     }
 
-    private static async getCachedCategories(): Promise<any | null> {
+    private static async getCachedRoles(): Promise<any | null> {
         const cachedData = await redisClient.get(this.CACHE_KEY);
         return cachedData ? JSON.parse(cachedData) : null;
     }
 
-    private static async cacheCategories(categories: any[]): Promise<void> {
+    private static async cacheRoles(roles: any[]): Promise<void> {
         await redisClient.setEx(
             this.CACHE_KEY,
             this.CACHE_DURATION,
-            JSON.stringify(categories)
+            JSON.stringify(roles)
         );
     }
 

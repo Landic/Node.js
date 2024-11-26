@@ -1,11 +1,11 @@
 import express from "express";
-import { connection } from "./config/db";
-import { userRouter } from "./routes/user-router";
-import { roleRouter } from "./routes/role-router";
-import { advertisementRouter } from "./routes/ad-router";
-import { categoryRouter } from "./routes/category-router";
-import { messageRouter } from "./routes/message-router";
-import { authRouter } from "./routes/auth-router";
+import { connection } from "./config/DB";
+import { userRouter } from "./routes/UserRouter";
+import { roleRouter } from "./routes/RoleRouter";
+import { advertisementRouter } from "./routes/AdvertisementRouter";
+import { categoryRouter } from "./routes/CategoryRouter";
+import { messageRouter } from "./routes/MessageRouter";
+import { authRouter } from "./routes/AuthRouter";
 import "dotenv/config";
 
 const app = express();
@@ -19,6 +19,6 @@ app.use("/message", messageRouter);
 app.use("/auth", authRouter);
 connection.sync().then(() => {
     app.listen(process.env.PORT, () => {
-        console.log(`Server is running https://localhost:${process.env.PORT}`);
+        console.log(`Server is running http://localhost:${process.env.PORT}`);
     });
 }).catch((error) => console.log("DB connection error:", error));

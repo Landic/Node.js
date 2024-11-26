@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { PasswordResetService } from '../services/Password-Reset-service';
-import { PasswordReset } from '../models/Password-Reset-model';
+import { PasswordResetService } from '../services/PasswordResetService';
+import { PasswordReset } from '../models/PasswordResetModel';
 
 export class PasswordResetController {
     public static async requestPasswordReset(

@@ -1,8 +1,8 @@
 import { Model, Table, Column, DataType, ForeignKey, HasMany } from 'sequelize-typescript';
-import { Role } from './role-model';
-import { Message } from './message-model';
-import { Advertisement } from './ad-model';
-import { PasswordReset } from './Password-Reset-model';
+import { Role } from './RoleModel';
+import { Message } from './MessageModel';
+import { Advertisement } from './AdvertisementModel';
+import { PasswordReset } from './PasswordResetModel';
 
 @Table({ tableName: 'Users', timestamps: false })
 export class User extends Model {

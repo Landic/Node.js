@@ -1,5 +1,5 @@
 import { Model, Table, Column, DataType, HasMany } from 'sequelize-typescript';
-import { User } from './user-model';
+import { User } from './UserModel';
 
 @Table({ tableName: 'Roles', timestamps: false })
 export class Role extends Model {

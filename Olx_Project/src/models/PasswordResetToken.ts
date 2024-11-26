@@ -1,5 +1,5 @@
 import { Model, DataTypes } from 'sequelize';
-import { connection } from '../config/db';
+import { connection } from '../config/DB';
 
 export class PasswordResetToken extends Model {
     public id!: number;

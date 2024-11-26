@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { Role } from '../models/role-model';
-import { redisClient } from '../config/redis';
+import { Message } from '../models/MessageModel';
+import { redisClient } from '../config/Redis';
 
-export class RoleController {
-    private static readonly CACHE_KEY = 'role:all';
+export class MessageController {
+    private static readonly CACHE_KEY = 'message:all';
     private static readonly CACHE_DURATION = 3600; // 1 hour in seconds
 
     public static async create(
@@ -11,14 +11,14 @@ export class RoleController {
         res: Response
     ): Promise<Response> {
         try {
-            const role = await Role.create(req.body);
+            const message = await Message.create(req.body);
 
             await this.invalidateCache();
 
-            return res.status(201).json(role);
+            return res.status(201).json(message);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when creating a role',
+                message: 'Error when creating a message',
                 error
             });
         }
@@ -29,20 +29,20 @@ export class RoleController {
         res: Response
     ): Promise<Response> {
         try {
-            const cachedRoles = await this.getCachedRoles();
+            const cachedMessages = await this.getCachedMessages();
 
-            if (cachedRoles) {
-                return res.status(200).json(cachedRoles);
+            if (cachedMessages) {
+                return res.status(200).json(cachedMessages);
             }
 
-            const roles = await Role.findAll();
+            const messages = await Message.findAll();
 
-            await this.cacheRoles(roles);
+            await this.cacheMessages(messages);
 
-            return res.status(200).json(roles);
+            return res.status(200).json(messages);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when obtaining roles',
+                message: 'Error when receiving messages',
                 error
             });
         }
@@ -53,18 +53,18 @@ export class RoleController {
         res: Response
     ): Promise<Response> {
         try {
-            const role = await Role.findByPk(req.params.id);
+            const message = await Message.findByPk(req.params.id);
 
-            if (!role) {
+            if (!message) {
                 return res.status(404).json({
-                    message: 'Role not found'
+                    message: 'Message not found'
                 });
             }
 
-            return res.json(role);
+            return res.json(message);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when retrieving role',
+                message: 'Error when retrieving message',
                 error
             });
         }
@@ -75,24 +75,24 @@ export class RoleController {
         res: Response
     ): Promise<Response> {
         try {
-            const [updatedCount] = await Role.update(
+            const [updatedCount] = await Message.update(
                 req.body,
                 { where: { id: req.params.id } }
             );
 
             if (!updatedCount) {
                 return res.status(404).json({
-                    message: 'Role not found'
+                    message: 'Message not found'
                 });
             }
 
-            const updatedRole = await Role.findByPk(req.params.id);
+            const updatedMessage = await Message.findByPk(req.params.id);
             await this.invalidateCache();
 
-            return res.json(updatedRole);
+            return res.json(updatedMessage);
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when updating role',
+                message: 'Error when updating message',
                 error
             });
         }
@@ -103,13 +103,13 @@ export class RoleController {
         res: Response
     ): Promise<Response> {
         try {
-            const deletedCount = await Role.destroy({
+            const deletedCount = await Message.destroy({
                 where: { id: req.params.id }
             });
 
             if (!deletedCount) {
                 return res.status(404).json({
-                    message: 'Role not found'
+                    message: 'Message not found'
                 });
             }
 
@@ -118,22 +118,22 @@ export class RoleController {
             return res.status(204).send();
         } catch (error) {
             return res.status(500).json({
-                message: 'Error when deleting role',
+                message: 'Error when deleting message',
                 error
             });
         }
     }
 
-    private static async getCachedRoles(): Promise<any | null> {
+    private static async getCachedMessages(): Promise<any | null> {
         const cachedData = await redisClient.get(this.CACHE_KEY);
         return cachedData ? JSON.parse(cachedData) : null;
     }
 
-    private static async cacheRoles(roles: any[]): Promise<void> {
+    private static async cacheMessages(messages: any[]): Promise<void> {
         await redisClient.setEx(
             this.CACHE_KEY,
             this.CACHE_DURATION,
-            JSON.stringify(roles)
+            JSON.stringify(messages)
         );
     }
 

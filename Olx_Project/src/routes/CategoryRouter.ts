@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { CategoryController } from '../controllers/category-controller';
+import { CategoryController } from '../controllers/CategoryController';
 
 // Обертка для асинхронных функций
 const asyncHandler = (fn: Function) => (req: any, res: any, next: any) =>
