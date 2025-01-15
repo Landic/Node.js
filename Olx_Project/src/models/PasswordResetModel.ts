@@ -1,15 +1,21 @@
 import { Model, Table, Column, DataType, ForeignKey } from 'sequelize-typescript';
-import { User } from './UserModel';
+import { UserModel } from './UserModel';
 
 @Table({ tableName: 'PasswordResets', timestamps: false })
-export class PasswordReset extends Model {
+export class PasswordResetModel extends Model {
     @Column({ type: DataType.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true })
-    reset_id!: number;
+    id!: number;
 
-    @ForeignKey(() => User) @Column({ type: DataType.INTEGER, allowNull: false })
-    user_id!: number;
+    @ForeignKey(() => UserModel)
+    @Column({ type: DataType.INTEGER, allowNull: false })
+    userId!: number;
 
-    @Column(DataType.STRING) token!: string;
-    @Column(DataType.DATE) created_date!: Date;
-    @Column(DataType.DATE) end_date!: Date;
+    @Column(DataType.STRING)
+    token!: string;
+
+    @Column(DataType.DATE)
+    createdAt!: Date;
+
+    @Column(DataType.DATE)
+    expiresAt!: Date;
 }

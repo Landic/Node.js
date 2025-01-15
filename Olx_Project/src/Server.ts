@@ -1,24 +1,27 @@
 import express from "express";
-import { connection } from "./config/DB";
-import { userRouter } from "./routes/UserRouter";
-import { roleRouter } from "./routes/RoleRouter";
-import { advertisementRouter } from "./routes/AdvertisementRouter";
-import { categoryRouter } from "./routes/CategoryRouter";
-import { messageRouter } from "./routes/MessageRouter";
-import { authRouter } from "./routes/AuthRouter";
+import { dbConnection } from "./config/dbConnection";
+import { userRoutes } from "./routes/userRoutes";
+import { roleRoutes } from "./routes/roleRoutes";
+import { adRoutes } from "./routes/adRoutes";
+import { categoryRoutes } from "./routes/categoryRoutes";
+import { messageRoutes } from "./routes/messageRoutes";
+import { authRoutes } from "./routes/authRoutes";
 import "dotenv/config";
 
-const app = express();
+const server = express();
 
-app.use(express.json());
-app.use("/users", userRouter);
-app.use("/roles", roleRouter);
-app.use("/advertisements", advertisementRouter);
-app.use("/category", categoryRouter);
-app.use("/message", messageRouter);
-app.use("/auth", authRouter);
-connection.sync().then(() => {
-    app.listen(process.env.PORT, () => {
-        console.log(`Server is running http://localhost:${process.env.PORT}`);
+server.use(express.json());
+server.use("/users", userRoutes);
+server.use("/roles", roleRoutes);
+server.use("/ads", adRoutes);
+server.use("/categories", categoryRoutes);
+server.use("/messages", messageRoutes);
+server.use("/auth", authRoutes);
+
+dbConnection.sync()
+  .then(() => {
+    server.listen(process.env.PORT, () => {
+      console.log(`Server running on port ${process.env.PORT}`);
     });
-}).catch((error) => console.log("DB connection error:", error));
+  })
+  .catch((err) => console.error("Database connection error:", err));

@@ -1,149 +1,83 @@
 import { Request, Response } from 'express';
+import { UserModel } from '../models/UserModel';
 import { PasswordResetService } from '../services/PasswordResetService';
-import { PasswordReset } from '../models/PasswordResetModel';
+import { PasswordResetModel } from '../models/PasswordResetModel';
 
-export class PasswordResetController {
-    public static async requestPasswordReset(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+export class PasswordResetHandler {
+    static async requestPasswordReset(req: Request, res: Response): Promise<any> {
+        const { email } = req.body;
         try {
-            const { email } = req.body;
-
-            await PasswordResetService.sendPasswordResetEmail(email);
-
-            return res.status(200).json({
-                message: 'Password reset email sent'
-            });
+            const user = await UserModel.findOne({ where: { email } });
+            if (!user) return res.status(404).json({ message: 'User with the specified email not found' });
+            await PasswordResetService.sendResetEmail(email);
+            return res.status(200).json({ message: 'Password reset email sent' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error sending password reset email',
-                error
-            });
+            return res.status(500).json({ message: 'Error sending password reset email', error });
         }
     }
 
-    public static async resetPassword(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async resetPassword(req: Request, res: Response): Promise<any> {
+        const { token, newPassword } = req.body;
         try {
-            const { token, newPassword } = req.body;
-
+            const passwordResetRecord = await PasswordResetModel.findOne({ where: { token } });
+            if (!passwordResetRecord || new Date(passwordResetRecord.expiresAt) < new Date()) {
+                throw new Error('Invalid or expired token');
+            }
             await PasswordResetService.resetPassword(token, newPassword);
-
-            return res.status(200).json({
-                message: 'Password reset'
-            });
+            return res.status(200).json({ message: 'Password reset successfully' });
         } catch (error) {
-            return res.status(400).json({
-                message: 'Invalid or expired token',
-                error
-            });
+            return res.status(400).json({ message: 'Invalid or expired token', error });
         }
     }
 
-    public static async create(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async createPasswordReset(req: Request, res: Response) {
         try {
-            const passwordReset = await PasswordReset.create(req.body);
-
-            return res.status(201).json(passwordReset);
+            const newPasswordReset = await PasswordResetModel.create(req.body);
+            res.status(201).json(newPasswordReset);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error creating password reset',
-                error
-            });
+            res.status(500).json({ message: 'Error creating password reset record', error });
         }
     }
 
-    public static async getAll(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async fetchAllPasswordResets(req: Request, res: Response) {
         try {
-            const passwordResets = await PasswordReset.findAll();
-
-            return res.json(passwordResets);
+            const passwordResets = await PasswordResetModel.findAll();
+            res.json(passwordResets);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error retrieving password resets',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching password resets', error });
         }
     }
 
-    public static async getById(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async getPasswordResetById(req: Request, res: Response) {
         try {
-            const passwordReset = await PasswordReset.findByPk(req.params.id);
-
-            if (!passwordReset) {
-                return res.status(404).json({
-                    message: 'Hash password not found'
-                });
-            }
-
-            return res.json(passwordReset);
+            const passwordResetRecord = await PasswordResetModel.findByPk(req.params.id);
+            passwordResetRecord
+                ? res.json(passwordResetRecord)
+                : res.status(404).json({ message: 'Password reset record not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error retrieving password reset',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching password reset record', error });
         }
     }
 
-    public static async update(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async updatePasswordReset(req: Request, res: Response) {
         try {
-            const [updatedCount] = await PasswordReset.update(
-                req.body,
-                { where: { id: req.params.id } }
-            );
-
-            if (!updatedCount) {
-                return res.status(404).json({
-                    message: 'Hash password not found'
-                });
-            }
-
-            const updatedPasswordReset = await PasswordReset.findByPk(req.params.id);
-            return res.json(updatedPasswordReset);
+            const [updated] = await PasswordResetModel.update(req.body, { where: { id: req.params.id } });
+            updated
+                ? res.json(await PasswordResetModel.findByPk(req.params.id))
+                : res.status(404).json({ message: 'Password reset record not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error updating password reset',
-                error
-            });
+            res.status(500).json({ message: 'Error updating password reset record', error });
         }
     }
 
-    public static async delete(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async deletePasswordReset(req: Request, res: Response) {
         try {
-            const deletedCount = await PasswordReset.destroy({
-                where: { id: req.params.id }
-            });
-
-            if (!deletedCount) {
-                return res.status(404).json({
-                    message: 'Hash password not found'
-                });
-            }
-
-            return res.status(204).send();
+            const deleted = await PasswordResetModel.destroy({ where: { id: req.params.id } });
+            deleted
+                ? res.status(204).send()
+                : res.status(404).json({ message: 'Password reset record not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error deleting password reset',
-                error
-            });
+            res.status(500).json({ message: 'Error deleting password reset record', error });
         }
     }
 }

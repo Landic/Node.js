@@ -1,11 +1,11 @@
 {
   "name": "olx-project",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "Server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -w",
-    "start": "nodemon dist/index.js"
+    "start": "nodemon dist/Server.js"
   },
   "keywords": [],
   "author": "volkov",

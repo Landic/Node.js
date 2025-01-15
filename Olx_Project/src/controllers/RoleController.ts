@@ -1,143 +1,56 @@
 import { Request, Response } from 'express';
-import { Role } from '../models/RoleModel';
-import { redisClient } from '../config/Redis';
+import { RoleModel } from '../models/RoleModel';
+import { cacheClient } from '../config/cacheClient';
 
-export class RoleController {
-    private static readonly CACHE_KEY = 'role:all';
-    private static readonly CACHE_DURATION = 3600; // 1 hour in seconds
-
-    public static async create(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+export class RoleHandler {
+    static async createRole(req: Request, res: Response) {
         try {
-            const role = await Role.create(req.body);
-
-            await this.invalidateCache();
-
-            return res.status(201).json(role);
+            const newRole = await RoleModel.create(req.body);
+            await cacheClient.del('roles:all');
+            res.status(201).json(newRole);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when creating a role',
-                error
-            });
+            res.status(500).json({ message: 'Error creating role', error });
         }
     }
 
-    public static async getAll(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async fetchRoles(req: Request, res: Response): Promise<any> {
         try {
-            const cachedRoles = await this.getCachedRoles();
+            const cacheKey = 'roles:all';
+            const cachedRoles = await cacheClient.get(cacheKey);
+            if (cachedRoles) return res.status(200).json(JSON.parse(cachedRoles));
 
-            if (cachedRoles) {
-                return res.status(200).json(cachedRoles);
-            }
-
-            const roles = await Role.findAll();
-
-            await this.cacheRoles(roles);
-
-            return res.status(200).json(roles);
+            const roles = await RoleModel.findAll();
+            await cacheClient.setEx(cacheKey, 3600, JSON.stringify(roles));
+            res.status(200).json(roles);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when obtaining roles',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching roles', error });
         }
     }
 
-    public static async getById(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async getRoleById(req: Request, res: Response) {
         try {
-            const role = await Role.findByPk(req.params.id);
-
-            if (!role) {
-                return res.status(404).json({
-                    message: 'Role not found'
-                });
-            }
-
-            return res.json(role);
+            const role = await RoleModel.findByPk(req.params.id);
+            role ? res.json(role) : res.status(404).json({ message: 'Role not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when retrieving role',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching role', error });
         }
     }
 
-    public static async update(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async updateRole(req: Request, res: Response) {
         try {
-            const [updatedCount] = await Role.update(
-                req.body,
-                { where: { id: req.params.id } }
-            );
-
-            if (!updatedCount) {
-                return res.status(404).json({
-                    message: 'Role not found'
-                });
-            }
-
-            const updatedRole = await Role.findByPk(req.params.id);
-            await this.invalidateCache();
-
-            return res.json(updatedRole);
+            const [updated] = await RoleModel.update(req.body, { where: { id: req.params.id } });
+            updated ? res.json(await RoleModel.findByPk(req.params.id)) : res.status(404).json({ message: 'Role not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when updating role',
-                error
-            });
+            res.status(500).json({ message: 'Error updating role', error });
         }
     }
 
-    public static async delete(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async deleteRole(req: Request, res: Response) {
         try {
-            const deletedCount = await Role.destroy({
-                where: { id: req.params.id }
-            });
-
-            if (!deletedCount) {
-                return res.status(404).json({
-                    message: 'Role not found'
-                });
-            }
-
-            await this.invalidateCache();
-
-            return res.status(204).send();
+            const deleted = await RoleModel.destroy({ where: { id: req.params.id } });
+            deleted ? res.status(204).send() : res.status(404).json({ message: 'Role not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when deleting role',
-                error
-            });
+            res.status(500).json({ message: 'Error deleting role', error });
         }
-    }
-
-    private static async getCachedRoles(): Promise<any | null> {
-        const cachedData = await redisClient.get(this.CACHE_KEY);
-        return cachedData ? JSON.parse(cachedData) : null;
-    }
-
-    private static async cacheRoles(roles: any[]): Promise<void> {
-        await redisClient.setEx(
-            this.CACHE_KEY,
-            this.CACHE_DURATION,
-            JSON.stringify(roles)
-        );
-    }
-
-    private static async invalidateCache(): Promise<void> {
-        await redisClient.del(this.CACHE_KEY);
     }
 }

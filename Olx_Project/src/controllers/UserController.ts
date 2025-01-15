@@ -1,108 +1,79 @@
 import { Request, Response } from 'express';
-import { User } from '../models/UserModel';
-import { Role } from '../models/RoleModel';
-import { redisClient } from '../config/Redis';
+import { UserModel } from '../models/UserModel';
+import { RoleModel } from '../models/RoleModel';
+import { cacheClient } from '../config/cacheClient';
 
-export class UserController {
-    private static readonly CACHE_KEY = 'user:all';
-
-    public static async createUser(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
-        try {
-            const { role_id, email, hash_pass, name, avatar } = req.body;
-            const newUser = await User.create({
-                role_id,
-                email,
-                hash_pass,
-                name,
-                avatar,
-                created_date: new Date(),
-                last_activity: new Date(),
-                status: true
-            });
-
-            await redisClient.del(this.CACHE_KEY);
-
-            return res.status(201).json(newUser);
-        } catch (error) {
-            return res.status(500).json({
-                message: 'Error when creating a user',
-                error
-            });
-        }
+export const addUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { roleId, email, hashedPassword, name, avatar } = req.body;
+        const newUser = await UserModel.create({
+            roleId,
+            email,
+            hashedPassword,
+            name,
+            avatar,
+            createdAt: new Date(),
+            lastActive: new Date(),
+            isActive: true
+        });
+        await cacheClient.del('users:all');
+        res.status(201).json(newUser);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating user', error });
     }
+};
 
-    public static async getUser(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
-        try {
-            const user = await User.findByPk(req.params.id, { include: [Role] });
+export const fetchUsers = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const users = await UserModel.findAll();
 
-            if (user) {
-                return res.status(200).json(user);
-            } else {
-                return res.status(404).json({ message: 'User not found' });
-            }
-        } catch (error) {
-            return res.status(500).json({
-                message: 'Error when retrieving a user',
-                error
-            });
-        }
+        if (users.length > 0) res.status(200).json(users);
+        else res.status(404).json({ message: 'No users found' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching users', error });
     }
+};
 
-    public static async updateUser(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
-        try {
-            const { role_id, email, name, avatar, status } = req.body;
-            const user = await User.findByPk(req.params.id);
+export const getUserById = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = req.params.id;
+        const user = await UserModel.findByPk(userId, { include: [RoleModel] });
 
-            if (user) {
-                user.role_id = role_id || user.role_id;
-                user.email = email || user.email;
-                user.name = name || user.name;
-                user.avatar = avatar || user.avatar;
-                user.status = status !== undefined ? status : user.status;
-                user.last_activity = new Date();
-
-                await user.save();
-
-                return res.status(200).json(user);
-            } else {
-                return res.status(404).json({ message: 'User not found' });
-            }
-        } catch (error) {
-            return res.status(500).json({
-                message: 'Error during user update',
-                error
-            });
-        }
+        user ? res.status(200).json(user) : res.status(404).json({ message: 'User not found' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching user', error });
     }
+};
 
-    public static async deleteUser(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
-        try {
-            const user = await User.findByPk(req.params.id);
+export const updateUser = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { roleId, email, name, avatar, isActive } = req.body;
+        const user = await UserModel.findByPk(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-            if (user) {
-                await user.destroy();
+        user.roleId = roleId || user.roleId;
+        user.email = email || user.email;
+        user.name = name || user.name;
+        user.avatar = avatar || user.avatar;
+        user.isActive = isActive !== undefined ? isActive : user.isActive;
+        user.lastActive = new Date();
 
-                return res.status(200).json({ message: 'User Deleted' });
-            } else {
-                return res.status(404).json({ message: 'User not found' });
-            }
-        } catch (error) {
-            return res.status(500).json({
-                message: 'Error when deleting a user',
-                error
-            });
-        }
+        await user.save();
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user', error });
     }
-}
+};
+
+export const removeUser = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const user = await UserModel.findByPk(req.params.id);
+
+        if (user) {
+            await user.destroy();
+            res.status(200).json({ message: 'User deleted' });
+        } else res.status(404).json({ message: 'User not found' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting user', error });
+    }
+};

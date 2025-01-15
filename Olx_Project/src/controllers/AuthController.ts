@@ -1,129 +1,67 @@
 import { Request, Response, NextFunction } from "express";
-import { User } from "../models/UserModel";
+import { UserModel } from "../models/UserModel";
+import { RoleModel } from "../models/RoleModel";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 
-export class AuthController {
-    private static readonly SALT_ROUNDS = 10;
-    private static readonly TOKEN_EXPIRATION = "1h";
-
-    public static async register(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Promise<Response | void> {
+export class AuthHandler {
+    static async registerUser(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
-            const { email, password, name } = req.body;
+            const { email, password, name, roleId } = req.body;
+            const existingUser = await UserModel.findOne({ where: { email } });
+            const role = await RoleModel.findByPk(roleId);
 
-            const existingUser = await User.findOne({
-                where: { email }
-            });
+            if (existingUser) return res.status(400).json({ message: "Email already in use" });
+            if (!role) return res.status(400).json({ message: "Role not found" });
 
-            if (existingUser) {
-                return res.status(400).json({
-                    message: "A user with this email address already exists"
-                });
-            }
-
-            const hashedPassword = await bcrypt.hash(
-                password,
-                this.SALT_ROUNDS
-            );
-
-            const currentDate = new Date();
-            const user = await User.create({
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const newUser = await UserModel.create({
                 email,
-                hash_pass: hashedPassword,
+                hashedPassword,
                 name,
-                created_date: currentDate,
-                last_activity: currentDate,
+                roleId,
+                createdAt: new Date(),
+                lastActive: new Date(),
             });
 
-            return res.status(201).json({
-                message: "User successfully registered",
-                user
-            });
+            return res.status(201).json({ message: "User registered successfully", newUser });
         } catch (error) {
+            console.error("Registration error:", error);
             next(error);
         }
     }
 
-    public static async login(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Promise<Response | void> {
+    static async loginUser(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             const { email, password } = req.body;
+            const user = await UserModel.findOne({ where: { email } });
+            if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-            const user = await User.findOne({
-                where: { email }
-            });
+            const isPasswordMatch = await bcrypt.compare(password, user.hashedPassword);
+            if (!isPasswordMatch) return res.status(400).json({ message: "Invalid email or password" });
 
-            if (!user || !(await this.verifyPassword(password, user.hash_pass))) {
-                return res.status(400).json({
-                    message: "Invalid email or password"
-                });
-            }
+            const token = jwt.sign(
+                { userId: user.id, email: user.email },
+                process.env.JWT_SECRET as string,
+                { expiresIn: "1h" }
+            );
 
-            const token = this.generateToken(user.user_id, user.email);
-
-            return res.json({
-                message: "Successful authentication",
-                token
-            });
+            return res.json({ message: "Login successful", token });
         } catch (error) {
             next(error);
         }
     }
 
-    public static verifyToken(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ): Response | void {
+    static verifyToken(req: Request, res: Response, next: NextFunction): any {
         const token = req.headers["authorization"];
+        if (!token) return res.status(401).json({ message: "Token not provided" });
+        if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET not set");
 
-        if (!token) {
-            return res.status(401).json({
-                message: "Token not provided"
-            });
-        }
-
-        try {
-            const secret = this.getJwtSecret();
-            const decoded = jwt.verify(token, secret);
-            req.user = decoded;
+        jwt.verify(token, process.env.JWT_SECRET, (err: any, decoded: any) => {
+            if (err) return res.status(401).json({ message: "Invalid token" });
+            (req as any).user = decoded;
             next();
-        } catch (error) {
-            return res.status(401).json({
-                message: "Invalid token"
-            });
-        }
-    }
-
-    private static async verifyPassword(
-        password: string,
-        hashedPassword: string
-    ): Promise<boolean> {
-        return bcrypt.compare(password, hashedPassword);
-    }
-
-    private static generateToken(userId: number, email: string): string {
-        const secret = this.getJwtSecret();
-        return jwt.sign(
-            { user_id: userId, email },
-            secret,
-            { expiresIn: this.TOKEN_EXPIRATION }
-        );
-    }
-
-    private static getJwtSecret(): string {
-        const secret = process.env.JWT_SECRET;
-        if (!secret) {
-            throw new Error("JWT_SECRET environment variable is not set");
-        }
-        return secret;
+        });
     }
 }

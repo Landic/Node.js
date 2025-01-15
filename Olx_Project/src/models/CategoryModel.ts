@@ -1,12 +1,14 @@
 import { Model, Table, Column, DataType, HasMany } from 'sequelize-typescript';
-import { Advertisement } from './AdvertisementModel';
+import { AdModel } from './AdModel';
 
 @Table({ tableName: 'Categories', timestamps: false })
-export class Category extends Model {
+export class CategoryModel extends Model {
     @Column({ type: DataType.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true })
-    category_id!: number;
+    id!: number;
 
-    @Column(DataType.STRING) category_name!: string;
+    @Column(DataType.STRING)
+    name!: string;
 
-    @HasMany(() => Advertisement) advertisements!: Advertisement[];
+    @HasMany(() => AdModel)
+    ads!: AdModel[];
 }

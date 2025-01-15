@@ -1,143 +1,80 @@
 import { Request, Response } from 'express';
-import { Message } from '../models/MessageModel';
-import { redisClient } from '../config/Redis';
+import { MessageModel } from '../models/MessageModel';
+import { cacheClient } from '../config/cacheClient';
 
-export class MessageController {
-    private static readonly CACHE_KEY = 'message:all';
-    private static readonly CACHE_DURATION = 3600; // 1 hour in seconds
-
-    public static async create(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+export class MessageHandler {
+    static async createMessage(req: Request, res: Response): Promise<any> {
         try {
-            const message = await Message.create(req.body);
-
-            await this.invalidateCache();
-
-            return res.status(201).json(message);
-        } catch (error) {
-            return res.status(500).json({
-                message: 'Error when creating a message',
-                error
-            });
-        }
-    }
-
-    public static async getAll(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
-        try {
-            const cachedMessages = await this.getCachedMessages();
-
-            if (cachedMessages) {
-                return res.status(200).json(cachedMessages);
+            const { senderId, receiverId, content } = req.body;
+            if (!senderId || !receiverId || !content) {
+                return res.status(400).json({ message: 'All fields (senderId, receiverId, content) are required.' });
             }
 
-            const messages = await Message.findAll();
-
-            await this.cacheMessages(messages);
-
-            return res.status(200).json(messages);
+            const newMessage = await MessageModel.create(req.body);
+            await cacheClient.del('messages:all');
+            res.status(201).json(newMessage);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when receiving messages',
-                error
-            });
+            res.status(500).json({ message: 'Error creating message', error });
         }
     }
 
-    public static async getById(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async fetchMessages(req: Request, res: Response): Promise<any> {
         try {
-            const message = await Message.findByPk(req.params.id);
+            const cacheKey = 'messages:all';
+            const cachedMessages = await cacheClient.get(cacheKey);
+            if (cachedMessages) return res.status(200).json(JSON.parse(cachedMessages));
 
-            if (!message) {
-                return res.status(404).json({
-                    message: 'Message not found'
-                });
-            }
-
-            return res.json(message);
+            const messages = await MessageModel.findAll();
+            await cacheClient.setEx(cacheKey, 3600, JSON.stringify(messages));
+            res.status(200).json(messages);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when retrieving message',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching messages', error });
         }
     }
 
-    public static async update(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async getMessageById(req: Request, res: Response): Promise<any> {
         try {
-            const [updatedCount] = await Message.update(
-                req.body,
-                { where: { id: req.params.id } }
-            );
+            const { id } = req.params;
+            const cacheKey = `message:${id}`;
+            const cachedMessage = await cacheClient.get(cacheKey);
 
-            if (!updatedCount) {
-                return res.status(404).json({
-                    message: 'Message not found'
-                });
-            }
+            if (cachedMessage) return res.status(200).json(JSON.parse(cachedMessage));
+            const message = await MessageModel.findByPk(id);
+            if (!message) return res.status(404).json({ message: 'Message not found' });
 
-            const updatedMessage = await Message.findByPk(req.params.id);
-            await this.invalidateCache();
-
-            return res.json(updatedMessage);
+            await cacheClient.setEx(cacheKey, 3600, JSON.stringify(message));
+            res.json(message);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when updating message',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching message', error });
         }
     }
 
-    public static async delete(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async updateMessage(req: Request, res: Response): Promise<any> {
         try {
-            const deletedCount = await Message.destroy({
-                where: { id: req.params.id }
-            });
+            const { id } = req.params;
+            const [updated] = await MessageModel.update(req.body, { where: { id } });
+            if (!updated) return res.status(404).json({ message: 'Message not found' });
 
-            if (!deletedCount) {
-                return res.status(404).json({
-                    message: 'Message not found'
-                });
-            }
-
-            await this.invalidateCache();
-
-            return res.status(204).send();
+            const updatedMessage = await MessageModel.findByPk(id);
+            await cacheClient.del('messages:all');
+            await cacheClient.del(`message:${id}`);
+            res.json(updatedMessage);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when deleting message',
-                error
-            });
+            res.status(500).json({ message: 'Error updating message', error });
         }
     }
 
-    private static async getCachedMessages(): Promise<any | null> {
-        const cachedData = await redisClient.get(this.CACHE_KEY);
-        return cachedData ? JSON.parse(cachedData) : null;
-    }
+    static async deleteMessage(req: Request, res: Response): Promise<any> {
+        try {
+            const { id } = req.params;
+            const deleted = await MessageModel.destroy({ where: { id } });
+            if (!deleted) return res.status(404).json({ message: 'Message not found' });
 
-    private static async cacheMessages(messages: any[]): Promise<void> {
-        await redisClient.setEx(
-            this.CACHE_KEY,
-            this.CACHE_DURATION,
-            JSON.stringify(messages)
-        );
-    }
-
-    private static async invalidateCache(): Promise<void> {
-        await redisClient.del(this.CACHE_KEY);
+            await cacheClient.del('messages:all');
+            await cacheClient.del(`message:${id}`);
+            res.status(204).send();
+        } catch (error) {
+            res.status(500).json({ message: 'Error deleting message', error });
+        }
     }
 }

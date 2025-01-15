@@ -1,14 +1,15 @@
 import { Model, DataTypes } from 'sequelize';
-import { connection } from '../config/DB';
+import { dbConnection } from '../config/dbConnection';
 
-export class PasswordResetToken extends Model {
+export class PasswordResetTokenModel extends Model {
     public id!: number;
     public userId!: number;
     public token!: string;
-    public expiryDate!: Date;
+    public expiresAt!: Date;
 }
 
-PasswordResetToken.init({
+PasswordResetTokenModel.init(
+    {
         userId: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -17,11 +18,13 @@ PasswordResetToken.init({
             type: DataTypes.STRING,
             allowNull: false,
         },
-        expiryDate: {
+        expiresAt: {
             type: DataTypes.DATE,
             allowNull: false,
         },
-    }, {
-        sequelize: connection,
+    },
+    {
+        sequelize: dbConnection,
         modelName: 'PasswordResetToken',
-});
+    }
+);

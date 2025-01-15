@@ -1,143 +1,58 @@
 import { Request, Response } from 'express';
-import { Category } from '../models/CategoryModel';
-import { redisClient } from '../config/Redis';
+import { CategoryModel } from '../models/CategoryModel';
+import { cacheClient } from '../config/cacheClient';
 
-export class CategoryController {
-    private static readonly CACHE_KEY = 'category:all';
-    private static readonly CACHE_DURATION = 3600; // 1 hour in seconds
-
-    public static async create(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+export class CategoryHandler {
+    static async createCategory(req: Request, res: Response) {
         try {
-            const category = await Category.create(req.body);
-
-            await this.invalidateCache();
-
-            return res.status(201).json(category);
+            const newCategory = await CategoryModel.create(req.body);
+            await cacheClient.del('categories:all');
+            res.status(201).json(newCategory);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when creating a category',
-                error
-            });
+            res.status(500).json({ message: 'Error creating category', error });
         }
     }
 
-    public static async getAll(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async fetchCategories(req: Request, res: Response): Promise<any> {
         try {
-            const cachedCategories = await this.getCachedCategories();
+            const cacheKey = 'categories:all';
+            const cachedCategories = await cacheClient.get(cacheKey);
+            if (cachedCategories) return res.status(200).json(JSON.parse(cachedCategories));
 
-            if (cachedCategories) {
-                return res.status(200).json(cachedCategories);
-            }
-
-            const categories = await Category.findAll();
-
-            await this.cacheCategories(categories);
-
-            return res.status(200).json(categories);
+            const categories = await CategoryModel.findAll();
+            await cacheClient.setEx(cacheKey, 3600, JSON.stringify(categories));
+            res.status(200).json(categories);
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when retrieving categories',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching categories', error });
         }
     }
 
-    public static async getById(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async getCategoryById(req: Request, res: Response) {
         try {
-            const category = await Category.findByPk(req.params.id);
-
-            if (!category) {
-                return res.status(404).json({
-                    message: 'Category not found'
-                });
-            }
-
-            return res.json(category);
+            const category = await CategoryModel.findByPk(+req.params.id);
+            category ? res.json(category) : res.status(404).json({ message: 'Category not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when retrieving category',
-                error
-            });
+            res.status(500).json({ message: 'Error fetching category', error });
         }
     }
 
-    public static async update(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async updateCategory(req: Request, res: Response) {
         try {
-            const [updatedCount] = await Category.update(
-                req.body,
-                { where: { id: req.params.id } }
-            );
-
-            if (!updatedCount) {
-                return res.status(404).json({
-                    message: 'Category not found'
-                });
-            }
-
-            const updatedCategory = await Category.findByPk(req.params.id);
-            await this.invalidateCache();
-
-            return res.json(updatedCategory);
+            const [updated] = await CategoryModel.update(req.body, { where: { id: +req.params.id } });
+            await cacheClient.del('categories:all');
+            updated ? res.json(await CategoryModel.findByPk(+req.params.id)) : res.status(404).json({ message: 'Category not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when updating category',
-                error
-            });
+            res.status(500).json({ message: 'Error updating category', error });
         }
     }
 
-    public static async delete(
-        req: Request,
-        res: Response
-    ): Promise<Response> {
+    static async deleteCategory(req: Request, res: Response) {
         try {
-            const deletedCount = await Category.destroy({
-                where: { id: req.params.id }
-            });
-
-            if (!deletedCount) {
-                return res.status(404).json({
-                    message: 'Category not found'
-                });
-            }
-
-            await this.invalidateCache();
-
-            return res.status(204).send();
+            const deleted = await CategoryModel.destroy({ where: { id: +req.params.id } });
+            await cacheClient.del('categories:all');
+            deleted ? res.status(204).send() : res.status(404).json({ message: 'Category not found' });
         } catch (error) {
-            return res.status(500).json({
-                message: 'Error when deleting category',
-                error
-            });
+            res.status(500).json({ message: 'Error deleting category', error });
         }
-    }
-
-    private static async getCachedCategories(): Promise<any | null> {
-        const cachedData = await redisClient.get(this.CACHE_KEY);
-        return cachedData ? JSON.parse(cachedData) : null;
-    }
-
-    private static async cacheCategories(categories: any[]): Promise<void> {
-        await redisClient.setEx(
-            this.CACHE_KEY,
-            this.CACHE_DURATION,
-            JSON.stringify(categories)
-        );
-    }
-
-    private static async invalidateCache(): Promise<void> {
-        await redisClient.del(this.CACHE_KEY);
     }
 }
