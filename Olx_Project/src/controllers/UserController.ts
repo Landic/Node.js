@@ -2,12 +2,24 @@ import { Request, Response } from 'express';
 import { UserModel } from '../models/UserModel';
 import { RoleModel } from '../models/RoleModel';
 import { cacheClient } from '../config/cacheClient';
+import bcrypt from 'bcryptjs';
 
-export const addUser = async (req: Request, res: Response): Promise<void> => {
+export const addUser = async (req: Request, res: Response): Promise<any> => {
     try {
-        const { roleId, email, hashedPassword, name, avatar } = req.body;
+        console.log('Headers:', req.headers);
+        console.log('Content-Type:', req.headers['content-type']);
+        console.log('Raw Body:', req.body);
+        console.log('roleId value:', req.body.roleId);
+        const { roleId, email, password, name, avatar } = req.body;
+
+        if (!roleId) {
+            return res.status(400).json({ message: 'Role ID is required' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10); // Хэшируем пароль
+
         const newUser = await UserModel.create({
-            roleId,
+            roleId: parseInt(roleId),
             email,
             hashedPassword,
             name,
@@ -16,6 +28,7 @@ export const addUser = async (req: Request, res: Response): Promise<void> => {
             lastActive: new Date(),
             isActive: true
         });
+
         await cacheClient.del('users:all');
         res.status(201).json(newUser);
     } catch (error) {

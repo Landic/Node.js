@@ -11,6 +11,7 @@ import "dotenv/config";
 const server = express();
 
 server.use(express.json());
+server.use(express.urlencoded({ extended: true }));
 server.use("/users", userRoutes);
 server.use("/roles", roleRoutes);
 server.use("/ads", adRoutes);
@@ -21,7 +22,7 @@ server.use("/auth", authRoutes);
 dbConnection.sync()
   .then(() => {
     server.listen(process.env.PORT, () => {
-      console.log(`Server running on port ${process.env.PORT}`);
+      console.log(`Server running http://localhost:${process.env.PORT}`);
     });
   })
   .catch((err) => console.error("Database connection error:", err));

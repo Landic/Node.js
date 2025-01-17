@@ -22,6 +22,7 @@ export class AdHandler {
                     isActive: false,
                     images: imagePaths
                 });
+                await cacheClient.del('ads:all');
                 res.status(201).json(newAd);
             } catch (error) {
                 res.status(500).json({ error: (error as Error).message });
@@ -66,6 +67,7 @@ export class AdHandler {
             ad.categoryId = categoryId || ad.categoryId;
 
             await ad.save();
+            await cacheClient.del('ads:all');
             res.json(ad);
         } catch (error) {
             res.status(500).json({ message: 'Error updating ad', error });
@@ -79,6 +81,7 @@ export class AdHandler {
             if (!ad) return res.status(404).json({ message: 'Ad not found' });
 
             await ad.destroy();
+            await cacheClient.del('ads:all');
             res.status(200).json({ message: 'Ad deleted' });
         } catch (error) {
             res.status(500).json({ message: 'Error deleting ad', error });
@@ -111,6 +114,7 @@ export class AdHandler {
 
             ad.isSold = true;
             await ad.save();
+            await cacheClient.del('ads:all');
             res.json({ message: 'Ad marked as sold' });
         } catch (error) {
             res.status(500).json({ message: 'Error updating ad status', error });

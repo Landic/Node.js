@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { AdHandler } from '../controllers/AdController';
 import { verifyAdminAccess } from '../middlewares/AuthMiddleware';
+import { verifyToken } from '../middlewares/VerifyToken';
 
 export const adRoutes = Router();
+
+adRoutes.use(verifyToken);
 
 adRoutes.post('/', verifyAdminAccess, AdHandler.createAd);
 adRoutes.get('/', AdHandler.fetchAds);
